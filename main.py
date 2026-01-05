@@ -17,16 +17,17 @@ load_dotenv()
 # MCP SERVERS CONFIG
 # -----------------------------
 SERVERS = {
-    "math": {
-        "transport": "stdio",
-        "command": "C:/Users/subha/AppData/Local/Programs/Python/Python312/Scripts/uv.exe",
-        "args": [
-            "run",
-            "fastmcp",
-            "run",
-            "D:/VS_Code/MCP_server/arithmetic_mcp/main.py",
-        ],
-    },
+    # this is for demonstration how local server can be added
+    # "math": {
+    #     "transport": "stdio",
+    #     "command": "..........", <- add your uv path
+    #     "args": [
+    #         "run",
+    #         "fastmcp",
+    #         "run",
+    #         "......../main.py", <- add the location of the mcp server present on your machine locally
+    #     ],
+    # },
     "expense_tracker": {
         "transport": "streamable_http",
         "url": "https://expense-tracker-mcpserver.fastmcp.app/mcp",
@@ -132,3 +133,4 @@ if user_input:
         )
 
     st.rerun()
+

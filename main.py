@@ -1,5 +1,6 @@
 import asyncio
 import streamlit as st
+import nest_asyncio
 from dotenv import load_dotenv
 
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -11,23 +12,17 @@ from langchain_core.messages import (
     AIMessage,
 )
 
+# -----------------------------
+# FIX ASYNCIO FOR STREAMLIT
+# -----------------------------
+nest_asyncio.apply()
+
 load_dotenv()
 
 # -----------------------------
 # MCP SERVERS CONFIG
 # -----------------------------
 SERVERS = {
-    # this is for demonstration how local server can be added
-    # "math": {
-    #     "transport": "stdio",
-    #     "command": "..........", <- add your uv path
-    #     "args": [
-    #         "run",
-    #         "fastmcp",
-    #         "run",
-    #         "......../main.py", <- add the location of the mcp server present on your machine locally
-    #     ],
-    # },
     "expense_tracker": {
         "transport": "streamable_http",
         "url": "https://expense-tracker-mcpserver.fastmcp.app/mcp",
@@ -38,7 +33,6 @@ SYSTEM_MESSAGE = SystemMessage(
     content=(
         "You are a general-purpose assistant.\n"
         "If a tool can help, you MUST use it.\n"
-        "For math, use the math tool.\n"
         "Be concise and helpful."
     )
 )
@@ -70,16 +64,16 @@ async def run_chat_step(messages):
     for _ in range(MAX_STEPS):
         response = await llm_with_tools.ainvoke(messages)
 
-        # ✅ FINAL ANSWER (NO TOOL CALLS)
+        # FINAL ANSWER
         if not getattr(response, "tool_calls", None):
             messages.append(response)
             return messages
 
-        # 🚫 INTERMEDIATE AI MESSAGE (HIDDEN)
+        # HIDE INTERMEDIATE AI MESSAGE
         response.additional_kwargs["intermediate"] = True
         messages.append(response)
 
-        # Execute tools
+        # EXECUTE TOOLS
         for tool_call in response.tool_calls:
             tool = named_tools[tool_call["name"]]
             result = await tool.ainvoke(tool_call.get("args") or {})
@@ -109,7 +103,7 @@ st.title("💬 MCP Chat Agent (Gemini)")
 if "messages" not in st.session_state:
     st.session_state.messages = [SYSTEM_MESSAGE]
 
-# Render messages (HIDE intermediate AI)
+# Render messages
 for msg in st.session_state.messages:
     if isinstance(msg, HumanMessage):
         with st.chat_message("user"):
@@ -128,9 +122,9 @@ if user_input:
     st.session_state.messages.append(HumanMessage(content=user_input))
 
     with st.spinner("Thinking..."):
-        st.session_state.messages = asyncio.run(
+        loop = asyncio.get_event_loop()
+        st.session_state.messages = loop.run_until_complete(
             run_chat_step(st.session_state.messages)
         )
 
     st.rerun()
-
